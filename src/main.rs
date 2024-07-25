@@ -15,8 +15,11 @@ async fn healthz() -> impl Responder {
     HttpResponse::Ok().body("OK")
 }
 
+// define a global tei port
+const TEI_PORT: &str = "8000";
+
 async fn readyz(data: web::Data<AppState>) -> impl Responder {
-    let response = data.client.get("http://127.0.0.1:8000/readyz").send().await;
+    let response = data.client.get("http://127.0.0.1:8000/health").send().await;
     match response {
         Ok(_) => HttpResponse::Ok().body("READY"),
         Err(_) => HttpResponse::ServiceUnavailable().body("NOT READY"),
@@ -74,6 +77,8 @@ async fn start_server() -> std::io::Result<Child> {
         }
         command.env(key, value);
     }
+
+    command.env("PORT", TEI_PORT);
 
     for arg in &args[1..] {
         command.arg(arg);
