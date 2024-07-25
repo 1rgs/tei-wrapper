@@ -56,11 +56,25 @@ async fn proxy(req: actix_web::HttpRequest, body: web::Bytes, data: web::Data<Ap
 }
 
 async fn start_server() -> std::io::Result<Child> {
-    let model_id = env::var("MODEL_ID").unwrap_or_else(|_| "BAAI/bge-large-en-v1.5".to_string());
-    let args: Vec<String> = env::args().collect();
-    let mut command = Command::new("text-embeddings-router");
 
-    command.arg("--model-id").arg(model_id).arg("--port").arg("8000");
+
+    let mut command = Command::new("text-embeddings-router");
+    if env::var("MODEL_ID").is_err() {
+        return Err(std::io::Error::new(std::io::ErrorKind::Other, "MODEL_ID is not set"));
+    }
+
+    if env::var("API_KEY").is_err() {
+        return Err(std::io::Error::new(std::io::ErrorKind::Other, "API_KEY is not set"));
+    }
+
+    let args: Vec<String> = env::args().collect();
+    for (key, value) in env::vars() {
+        if key == "API_KEY" {
+            continue;
+        }
+        command.env(key, value);
+    }
+
     for arg in &args[1..] {
         command.arg(arg);
     }
