@@ -94,7 +94,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(TracingLogger::default())
             .default_service(web::to(proxy))
     })
-    .bind("0.0.0.0:8523")?
+    .bind("0.0.0.0:8001")?
     .run()
     .await
 }
