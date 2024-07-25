@@ -1,8 +1,5 @@
 FROM ghcr.io/huggingface/text-embeddings-inference:1.5
-RUN apt-get update && apt-get install -y \
-  git \
-  build-essential \
-  libssl-dev \
+RUN apt-get update && apt-get install -y git build-essential libssl-dev
 
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 
