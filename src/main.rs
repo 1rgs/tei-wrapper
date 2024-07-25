@@ -1,10 +1,13 @@
-use actix_web::{web, App, HttpServer, HttpResponse, Responder};
+use actix_web::{web, App, HttpServer, HttpResponse, Responder,middleware::Logger};
 use reqwest::Client;
 use std::process::{Command, Child};
 use std::sync::Mutex;
 use tokio::time::{sleep, Duration};
 use tracing_actix_web::TracingLogger;
 use std::env;
+use tracing::{Level};
+use tracing_subscriber::FmtSubscriber;
+
 
 struct AppState {
     client: Client,
@@ -95,6 +98,15 @@ async fn start_server() -> std::io::Result<Child> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // Initialize tracing subscriber for logging
+    let subscriber = FmtSubscriber::builder()
+        .with_max_level(Level::INFO)
+        .finish();
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("setting default subscriber failed");
+
     let client = Client::new();
     let child = start_server().await.unwrap();
     let app_state = web::Data::new(AppState {
@@ -104,10 +116,11 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .wrap(TracingLogger::default()) // Middleware to log requests
+            .wrap(Logger::default()) // Middleware to log requests
             .app_data(app_state.clone())
             .route("/healthz", web::get().to(healthz))
             .route("/readyz", web::get().to(readyz))
-            .wrap(TracingLogger::default())
             .default_service(web::to(proxy))
     })
     .bind("0.0.0.0:8001")?
