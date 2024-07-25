@@ -16,10 +16,10 @@ async fn healthz() -> impl Responder {
 }
 
 // define a global tei port
-const TEI_PORT: &str = "8000";
+const TEI_PORT: &str = "7999";
 
 async fn readyz(data: web::Data<AppState>) -> impl Responder {
-    let response = data.client.get("http://127.0.0.1:8000/health").send().await;
+    let response = data.client.get("http://127.0.0.1:7999/health").send().await;
     match response {
         Ok(_) => HttpResponse::Ok().body("READY"),
         Err(_) => HttpResponse::ServiceUnavailable().body("NOT READY"),
@@ -28,21 +28,17 @@ async fn readyz(data: web::Data<AppState>) -> impl Responder {
 
 async fn proxy(req: actix_web::HttpRequest, body: web::Bytes, data: web::Data<AppState>) -> impl Responder {
     let client = &data.client;
-    let auth_token = "Bearer ".to_string() + env::var("API_KEY").unwrap().as_str();
-
-    let mut request_builder = client
-        .request(req.method().clone(), &format!("http://127.0.0.1:8000{}", req.uri()))
-        .headers(req.headers().clone().into())
-        .body(body);
-
-    if !auth_token.is_empty() {
-        request_builder = request_builder.bearer_auth(auth_token.clone());
-    }
+    let auth_token = "Bearer ".to_string() + env::var("TEI_API_KEY").unwrap().as_str();
 
     let api_key = req.headers().get("Authorization");
     if api_key.is_none() || api_key.unwrap().to_str().unwrap() != auth_token {
         return HttpResponse::Unauthorized().body("Unauthorized");
     }
+
+    let mut request_builder = client
+        .request(req.method().clone(), &format!("http://127.0.0.1:7999{}", req.uri()))
+        .headers(req.headers().clone().into())
+        .body(body);
 
     let response = request_builder.send().await;
 
@@ -66,13 +62,13 @@ async fn start_server() -> std::io::Result<Child> {
         return Err(std::io::Error::new(std::io::ErrorKind::Other, "MODEL_ID is not set"));
     }
 
-    if env::var("API_KEY").is_err() {
-        return Err(std::io::Error::new(std::io::ErrorKind::Other, "API_KEY is not set"));
+    if env::var("TEI_API_KEY").is_err() {
+        return Err(std::io::Error::new(std::io::ErrorKind::Other, "TEI_API_KEY is not set"));
     }
 
     let args: Vec<String> = env::args().collect();
     for (key, value) in env::vars() {
-        if key == "API_KEY" {
+        if key == "TEI_API_KEY" {
             continue;
         }
         command.env(key, value);
@@ -87,7 +83,7 @@ async fn start_server() -> std::io::Result<Child> {
 
     let child = command.spawn()?;
     for _ in 0..90 {
-        if std::net::TcpStream::connect("127.0.0.1:8000").is_ok() {
+        if std::net::TcpStream::connect("127.0.0.1:7999").is_ok() {
             println!("Service is ready!");
             return Ok(child);
         }
