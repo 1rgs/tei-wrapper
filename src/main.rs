@@ -78,7 +78,8 @@ async fn start_server() -> std::io::Result<Child> {
         command.env(key, value);
     }
 
-    command.env("PORT", TEI_PORT);
+    command.arg("--port");
+    command.arg(TEI_PORT);
 
     for arg in &args[1..] {
         command.arg(arg);
