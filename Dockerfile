@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y \
   build-essential \
   libssl-dev \
 # install cargo
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 
