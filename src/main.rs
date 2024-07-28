@@ -14,9 +14,9 @@ struct AppState {
     child: Mutex<Option<Child>>,
 }
 
-async fn healthz() -> impl Responder {
-    HttpResponse::Ok().body("OK")
-}
+// async fn healthz() -> impl Responder {
+//     HttpResponse::Ok().body("OK")
+// }
 
 // define a global tei port
 const TEI_PORT: &str = "7999";
@@ -119,7 +119,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(TracingLogger::default()) // Middleware to log requests
             .wrap(Logger::default()) // Middleware to log requests
             .app_data(app_state.clone())
-            .route("/healthz", web::get().to(healthz))
+            .route("/healthz", web::get().to(readyz))
             .route("/readyz", web::get().to(readyz))
             .default_service(web::to(proxy))
     })
