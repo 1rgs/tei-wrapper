@@ -38,7 +38,7 @@ async fn proxy(req: actix_web::HttpRequest, body: web::Bytes, data: web::Data<Ap
         return HttpResponse::Unauthorized().body("Unauthorized");
     }
 
-    let mut request_builder = client
+    let request_builder = client
         .request(req.method().clone(), &format!("http://127.0.0.1:7999{}", req.uri()))
         .headers(req.headers().clone().into())
         .body(body);
@@ -46,7 +46,7 @@ async fn proxy(req: actix_web::HttpRequest, body: web::Bytes, data: web::Data<Ap
     let response = request_builder.send().await;
 
     match response {
-        Ok(mut res) => {
+        Ok(res) => {
             let mut client_resp = HttpResponse::build(res.status());
             for (key, value) in res.headers().iter() {
                 client_resp.insert_header((key.clone(), value.clone()));
@@ -68,6 +68,8 @@ async fn start_server() -> std::io::Result<Child> {
     if env::var("TEI_API_KEY").is_err() {
         return Err(std::io::Error::new(std::io::ErrorKind::Other, "TEI_API_KEY is not set"));
     }
+
+    command.env("RUST_BACKTRACE", "1");
 
     let args: Vec<String> = env::args().collect();
     for (key, value) in env::vars() {
